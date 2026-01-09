@@ -9,6 +9,9 @@ import com.neeraj.auth.authservice.dto.LoginRequest;
 import com.neeraj.auth.authservice.dto.RegisterRequest;
 import com.neeraj.auth.authservice.entity.Role;
 import com.neeraj.auth.authservice.entity.User;
+import com.neeraj.auth.authservice.exception.BadRequestException;
+import com.neeraj.auth.authservice.exception.NotFoundException;
+import com.neeraj.auth.authservice.exception.UnauthorizedException;
 import com.neeraj.auth.authservice.repository.RoleRepository;
 import com.neeraj.auth.authservice.repository.UserRepository;
 import com.neeraj.auth.authservice.util.JwtService;
@@ -28,11 +31,11 @@ public class AuthServiceImpl implements AuthService {
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new BadRequestException("Email already registered");
         }
 
         Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("ROLE_USER not found in DB"));
+                .orElseThrow(() -> new NotFoundException("ROLE_USER not found in DB"));
 
         User user = new User();
         user.setName(request.getName());
@@ -46,9 +49,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public String login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow (() -> new RuntimeException("User Not Found"));
+                .orElseThrow (() -> new NotFoundException("User Not Found"));
                 if(!passwordEncoder.matches(request.getPassword(),user.getPassword())){
-                    throw new RuntimeException("Invalid credentials");
+                    throw new UnauthorizedException("Invalid credentials");
                 }
 
         return jjwtService.generateToken(user.getEmail());

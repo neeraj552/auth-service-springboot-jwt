@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.neeraj.auth.authservice.dto.LoginRequest;
 import com.neeraj.auth.authservice.dto.RegisterRequest;
+import com.neeraj.auth.authservice.response.ApiResponse;
 import com.neeraj.auth.authservice.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -24,12 +25,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request){
         authService.register(request);
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok(new ApiResponse<>(true,"User registered successfully",null));
     }
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request){
         String result = authService.login(request);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Login successful", result));
     }
 
 }
