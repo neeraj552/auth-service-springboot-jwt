@@ -67,5 +67,8 @@ public class AuthServiceImpl implements AuthService {
 
     return new AuthResponse(accessToken, refreshToken.getToken());
 }
+public void logout(String refreshToken){
+    refreshTokenService.logout(refreshToken);
+}
 
 }

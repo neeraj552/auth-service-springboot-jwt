@@ -9,11 +9,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.neeraj.auth.authservice.dto.AuthResponse;
+import com.neeraj.auth.authservice.dto.ForgotPasswordRequest;
 import com.neeraj.auth.authservice.dto.LoginRequest;
+import com.neeraj.auth.authservice.dto.LogoutRequest;
 import com.neeraj.auth.authservice.dto.RegisterRequest;
+import com.neeraj.auth.authservice.dto.ResetPasswordRequest;
 import com.neeraj.auth.authservice.entity.RefreshToken;
 import com.neeraj.auth.authservice.response.ApiResponse;
 import com.neeraj.auth.authservice.service.AuthService;
+import com.neeraj.auth.authservice.service.PasswordResetService;
 import com.neeraj.auth.authservice.service.RefreshTokenService;
 import com.neeraj.auth.authservice.util.JwtService;
 import com.neeraj.auth.authservice.dto.RefreshTokenRequest;
@@ -28,6 +32,7 @@ public class AuthController {
     private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request){
@@ -50,6 +55,34 @@ public class AuthController {
 
     return ResponseEntity.ok(new ApiResponse<>(true, "Token refreshed successfully", response));
 }
+   @PostMapping("/logout")
+   public ResponseEntity<?> logout(@Valid @RequestBody LogoutRequest request){
+    authService.logout(request.getRefreshToken());
+    return ResponseEntity.ok(new ApiResponse<>(true,"Logged out succesfully", null)
+);
+   }
+   @PostMapping("/forgot-password")
+   public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
+    passwordResetService.createResetToken(request.getEmail());
+    return ResponseEntity.ok(
+        new ApiResponse<>(true,"Password reset token generated(check console for now)",
+        null)
+    );
+   }
+   @PostMapping("/reset-password")
+   public ResponseEntity<?> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request){
+                passwordResetService.resetPassword(
+                    request.getToken(),
+                    request.getNewPassword()
+                    );
+                    return ResponseEntity.ok(
+                        new ApiResponse<>(true,"Password reset successful",null)
+                    );
+            }
+
+
+   
 
 
 }

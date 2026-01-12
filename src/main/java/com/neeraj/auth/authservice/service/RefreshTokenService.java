@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.neeraj.auth.authservice.entity.RefreshToken;
 import com.neeraj.auth.authservice.entity.User;
+import com.neeraj.auth.authservice.exception.NotFoundException;
 import com.neeraj.auth.authservice.repository.RefreshTokenRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,11 @@ public class RefreshTokenService {
         RefreshToken refreshToken = verifyRefreshToken(token);
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
+    }
+    public void logout(String token){
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+        .orElseThrow(() -> new NotFoundException("Refresh token not found"));
+        refreshTokenRepository.delete(refreshToken);
     }
 
 }

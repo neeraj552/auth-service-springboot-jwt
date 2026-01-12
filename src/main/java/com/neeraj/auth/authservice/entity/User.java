@@ -2,6 +2,8 @@ package com.neeraj.auth.authservice.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -29,4 +31,9 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles;
+    @Column(nullable = false)
+    private boolean enabled = true;
+    @Column(nullable = false)
+    private int failedAttempts = 0;
+    private LocalDateTime lockTime;
 }
