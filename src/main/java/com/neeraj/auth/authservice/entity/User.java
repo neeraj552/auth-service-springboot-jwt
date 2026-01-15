@@ -32,7 +32,7 @@ public class User {
     )
     private Set<Role> roles;
     @Column(nullable = false)
-    private boolean enabled = true;
+    private boolean enabled = false;
     @Column(nullable = false)
     private int failedAttempts = 0;
     private LocalDateTime lockTime;
