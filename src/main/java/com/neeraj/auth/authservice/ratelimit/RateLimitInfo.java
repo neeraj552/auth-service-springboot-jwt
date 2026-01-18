@@ -1,4 +1,4 @@
-package com.neeraj.auth.authservice.util;
+package com.neeraj.auth.authservice.ratelimit;
 
 import java.time.Instant;
 

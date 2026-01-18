@@ -2,8 +2,6 @@ package com.neeraj.auth.authservice.service;
 
 import java.time.Instant;
 import java.util.UUID;
-
-import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import com.neeraj.auth.authservice.entity.RefreshToken;
@@ -44,6 +42,11 @@ public class RefreshTokenService {
         RefreshToken refreshToken = verifyRefreshToken(token);
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
+    }
+    public RefreshToken rotateRefreshToken(RefreshToken oldToken){
+        refreshTokenRepository.delete(oldToken);
+        return createRefreshToken(oldToken.getUser());
+
     }
     public void logout(String token){
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)

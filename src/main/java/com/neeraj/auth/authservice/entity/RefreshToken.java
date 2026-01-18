@@ -1,6 +1,7 @@
 package com.neeraj.auth.authservice.entity;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,7 +25,7 @@ public class RefreshToken {
     private Instant expiryDate;
     private boolean revoked = false;
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
 

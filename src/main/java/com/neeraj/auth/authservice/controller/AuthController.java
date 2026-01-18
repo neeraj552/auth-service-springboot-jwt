@@ -49,14 +49,23 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@RequestBody RefreshTokenRequest request) {
 
-    RefreshToken token = refreshTokenService.verifyRefreshToken(request.getRefreshToken());
+    RefreshToken oldToken =
+            refreshTokenService.verifyRefreshToken(request.getRefreshToken());
 
-    String newAccessToken = jwtService.generateToken(token.getUser().getEmail());
+    RefreshToken newToken =
+            refreshTokenService.rotateRefreshToken(oldToken);
 
-    AuthResponse response = new AuthResponse(newAccessToken, request.getRefreshToken());
+    String newAccessToken =
+            jwtService.generateToken(oldToken.getUser().getEmail());
 
-    return ResponseEntity.ok(new ApiResponse<>(true, "Token refreshed successfully", response));
+    AuthResponse response =
+            new AuthResponse(newAccessToken, newToken.getToken());
+
+    return ResponseEntity.ok(
+        new ApiResponse<>(true, "Token refreshed successfully", response)
+    );
 }
+
    @PostMapping("/logout")
    public ResponseEntity<?> logout(@Valid @RequestBody LogoutRequest request){
     authService.logout(request.getRefreshToken());
@@ -71,7 +80,7 @@ public class AuthController {
         null)
     );
    }
-   
+
    @PostMapping("/reset-password")
    public ResponseEntity<?> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request){

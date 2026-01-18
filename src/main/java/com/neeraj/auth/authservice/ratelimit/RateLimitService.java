@@ -1,4 +1,4 @@
-package com.neeraj.auth.authservice.service;
+package com.neeraj.auth.authservice.ratelimit;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -6,31 +6,34 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
-
-import com.neeraj.auth.authservice.util.RateLimitInfo;
-
 @Service
 public class RateLimitService {
-    private static final int MAX_REQUESTS = 5;
-    private static final Duration WINDOW_DURATION = Duration.ofMinutes(1);
+
     private final Map<String, RateLimitInfo> requestMap = new ConcurrentHashMap<>();
-    public boolean isAllowed(String key){
+
+    public boolean isAllowed(String key, RateLimitPolicy policy) {
+
         RateLimitInfo info = requestMap.get(key);
-        if(info == null){
-            requestMap.put(key, new RateLimitInfo());
+
+        if (info == null) {
+            info = new RateLimitInfo();
+            requestMap.put(key, info);
             return true;
         }
+
         Instant now = Instant.now();
-        if(now.isAfter(info.getWindowStart().plus(WINDOW_DURATION))){
+
+        if (now.isAfter(info.getWindowStart().plus(policy.window()))) {
             info.reset();
             return true;
         }
-        if(info.getRequestCount() < MAX_REQUESTS){
+
+        if (info.getRequestCount() < policy.MAX_REQUESTS()) {
             info.increment();
             return true;
         }
+
         return false;
     }
-
-
 }
+
