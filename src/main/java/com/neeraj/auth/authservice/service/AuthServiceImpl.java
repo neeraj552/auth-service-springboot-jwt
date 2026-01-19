@@ -6,6 +6,7 @@ import java.util.Set;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.neeraj.auth.authservice.audit.AuditEventType;
 import com.neeraj.auth.authservice.dto.AuthResponse;
 import com.neeraj.auth.authservice.dto.LoginRequest;
 import com.neeraj.auth.authservice.dto.RegisterRequest;
@@ -18,6 +19,7 @@ import com.neeraj.auth.authservice.exception.UnauthorizedException;
 import com.neeraj.auth.authservice.repository.RoleRepository;
 import com.neeraj.auth.authservice.repository.UserRepository;
 import com.neeraj.auth.authservice.util.JwtService;
+import com.neeraj.auth.authservice.util.RequestContext;
 import com.neeraj.auth.authservice.util.SecurityConstants;
 import com.neeraj.auth.authservice.service.RefreshTokenService;
 
@@ -34,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jjwtService;
     private final RefreshTokenService refreshTokenService;
     private final EmailVerificationService emailVerificationService;
+    private final AuditLogService auditLogService;
 
     @Override
     public void register(RegisterRequest request) {
@@ -56,31 +59,71 @@ public class AuthServiceImpl implements AuthService {
     }
 
   
-    @Override
-    public AuthResponse login(LoginRequest request) {
-    User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new NotFoundException("User Not Found"));
+   @Override
+public AuthResponse login(LoginRequest request) {
 
-    if(!user.isEnabled()){
+    User user = userRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new NotFoundException("User Not Found"));
+
+    if (!user.isEnabled()) {
+        auditLogService.log(
+            AuditEventType.LOGIN_BLOCKED,
+            user.getEmail(),
+            RequestContext.getIp(),
+            "/api/auth/login",
+            false
+        );
         throw new UnauthorizedException("Account not verified");
-    }        
-    if(isAccountLocked(user)){
+    }
+
+    if (isAccountLocked(user)) {
+        auditLogService.log(
+            AuditEventType.LOGIN_BLOCKED,
+            user.getEmail(),
+            RequestContext.getIp(),
+            "/api/auth/login",
+            false
+        );
         throw new UnauthorizedException("Account is locked. Try again later");
     }
 
     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
         increaseFailedAttempts(user);
+        auditLogService.log(
+            AuditEventType.LOGIN_FAILED,
+            user.getEmail(),
+            RequestContext.getIp(),
+            "/api/auth/login",
+            false
+        );
         throw new UnauthorizedException("Invalid credentials");
     }
+
     resetFailedAttempts(user);
 
     String accessToken = jjwtService.generateToken(user.getEmail());
     RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
+    auditLogService.log(
+        AuditEventType.LOGIN_SUCCESS,
+        user.getEmail(),
+        RequestContext.getIp(),
+        "/api/auth/login",
+        true
+    );
+
     return new AuthResponse(accessToken, refreshToken.getToken());
 }
+
     public void logout(String refreshToken){
     refreshTokenService.logout(refreshToken);
+    auditLogService.log(
+        AuditEventType.LOGOUT,
+        null,
+        RequestContext.getIp(),
+        "api/auth/logout",
+        true
+    );
    }
 
    private boolean isAccountLocked(User user){
@@ -107,6 +150,14 @@ public class AuthServiceImpl implements AuthService {
 
     if (attempts >= SecurityConstants.MAX_FAILED_ATTEMPTS) {
         user.setLockTime(LocalDateTime.now());
+        auditLogService.log(
+            AuditEventType.ACCOUNT_LOCKED,
+            user.getEmail(),
+            RequestContext.getIp(),
+            "/api/auth/login",
+            false
+
+        );
     }
 
     userRepository.saveAndFlush(user); 
