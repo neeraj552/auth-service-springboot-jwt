@@ -20,7 +20,7 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name="event_type",length = 50,nullable = false)
     private AuditEventType eventType;
     @Column(length = 150)
     private String email;
