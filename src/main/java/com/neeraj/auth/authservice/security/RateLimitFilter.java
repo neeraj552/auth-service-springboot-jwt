@@ -32,33 +32,31 @@ public class RateLimitFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain
-    ) throws ServletException, IOException {
+    ) throws IOException, ServletException {
 
         String path = request.getRequestURI();
         String ip = request.getRemoteAddr();
-        String email = null;
 
         RequestContext.setIp(ip);
 
         try {
             boolean allowed = true;
 
-            if (path.equals("/api/auth/login")) {
+            if (path.startsWith("/api/auth/login")) {
                 allowed = rateLimitService.isAllowed(
                         "LOGIN:" + ip,
                         RateLimitPolicies.LOGIN
                 );
             }
-            else if (path.equals("/api/auth/register")) {
+            else if (path.startsWith("/api/auth/register")) {
                 allowed = rateLimitService.isAllowed(
                         "REGISTER:" + ip,
                         RateLimitPolicies.REGISTER
                 );
             }
-            else if (path.equals("/api/auth/forgot-password")) {
-                email = request.getParameter("email");
+            else if (path.startsWith("/api/auth/forgot-password")) {
                 allowed = rateLimitService.isAllowed(
-                        "FORGOT:" + email,
+                        "FORGOT:" + ip,
                         RateLimitPolicies.FORGOT_PASSWORD
                 );
             }
@@ -66,7 +64,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             if (!allowed) {
                 auditLogService.log(
                         AuditEventType.RATE_LIMIT_BLOCKED,
-                        email,
+                        null,
                         ip,
                         path,
                         false
@@ -74,18 +72,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
                 response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
                 response.setContentType("application/json");
-
-                ApiResponse<?> body =
-                        new ApiResponse<>(false, "Too many requests. Try again later", null);
-
-                response.getWriter()
-                        .write(objectMapper.writeValueAsString(body));
-                return; 
+                response.getWriter().write(
+                        objectMapper.writeValueAsString(
+                                new ApiResponse<>(false, "Too many requests. Try again later", null)
+                        )
+                );
+                return;
             }
+
             filterChain.doFilter(request, response);
 
         } finally {
-            RequestContext.clear(); 
+            RequestContext.clear();
         }
     }
 }

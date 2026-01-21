@@ -1,39 +1,26 @@
 package com.neeraj.auth.authservice.ratelimit;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
 @Service
+@RequiredArgsConstructor
 public class RateLimitService {
 
-    private final Map<String, RateLimitInfo> requestMap = new ConcurrentHashMap<>();
+    private final RedisTemplate<String, String> redisTemplate;
 
     public boolean isAllowed(String key, RateLimitPolicy policy) {
 
-        RateLimitInfo info = requestMap.get(key);
+        String redisKey = "rate_limit:" + key;
 
-        if (info == null) {
-            info = new RateLimitInfo();
-            requestMap.put(key, info);
-            return true;
+        Long count = redisTemplate.opsForValue().increment(redisKey);
+        System.out.println("REDIS COUNT [" + redisKey + "] = " + count);
+        if (count != null && count == 1) {
+            redisTemplate.expire(redisKey, policy.window());
         }
 
-        Instant now = Instant.now();
-
-        if (now.isAfter(info.getWindowStart().plus(policy.window()))) {
-            info.reset();
-            return true;
-        }
-
-        if (info.getRequestCount() < policy.MAX_REQUESTS()) {
-            info.increment();
-            return true;
-        }
-
-        return false;
+        return count != null && count <= policy.MAX_REQUESTS();
     }
 }
+
 
