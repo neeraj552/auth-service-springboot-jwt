@@ -1,81 +1,85 @@
-# 🔐 Spring Boot JWT Authentication Service
+# 🔐 Auth Service – Spring Boot JWT + Redis + CI
 
-A production-style authentication and authorization service built using **Spring Boot, Spring Security, JWT, and MySQL**.
+A **production-grade authentication & authorization service** built with **Spring Boot 3**, featuring **JWT security, Redis rate limiting, audit logging, full test coverage, and Jenkins CI**.
 
-This project implements a real-world backend authentication system with secure login, token-based authentication, role-based access control, and global exception handling.
+> Designed like a real-world backend system — not a tutorial project.
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
-- User Registration with BCrypt password encryption
-- Login API with JWT token generation
-- Stateless authentication using Spring Security
-- Custom JWT filter to validate token on every request
-- Role-based user model (USER / ADMIN)
-- Protected APIs accessible only with Bearer token
-- Global exception handling with clean API responses
-- Standard API response structure
-- MySQL + JPA + Hibernate integration
+- User Registration with **BCrypt password hashing**
+- **JWT Authentication** (Access Token + Refresh Token)
+- Refresh Token Flow with secure re-issuance
+- **Stateless Spring Security** with custom JWT filter
+- **Redis-based Rate Limiting** (login, register, forgot-password)
+- Audit logging for sensitive security actions
+- **Role-based Access Control** (USER / ADMIN)
+- **Global Exception Handling** with consistent API responses
+- **Unit + Integration Testing** (JUnit 5, Mockito, MockMvc)
+- **CI Pipeline with Jenkins**
+- MySQL + JPA + Hibernate
 
 ---
 
 ## 🏗️ Tech Stack
 
-- Java 17+
-- Spring Boot
-- Spring Security
-- JWT (io.jsonwebtoken)
-- MySQL
-- JPA / Hibernate
-- Maven
-- Lombok
+- Java 17  
+- Spring Boot 3.x  
+- Spring Security  
+- JWT (io.jsonwebtoken)  
+- MySQL 8  
+- Redis 7  
+- Spring Data JPA / Hibernate  
+- Maven  
+- Lombok  
+- JUnit 5, Mockito, MockMvc  
+- Jenkins  
 
 ---
 
 ## 🔁 Authentication Flow
 
-```
-Register → Login → Get JWT → Send JWT in Authorization Header → JWT Filter Validates → Access Granted / Denied
-```
+Register → Login → Receive Access & Refresh Token → Send JWT in Authorization Header → JWT Filter Validates → Access Granted / Denied
 
 ---
 
 ## 📦 API Endpoints
 
-### 🔓 Public
+### Public
 
-```http
-POST /api/auth/register
-POST /api/auth/login
-```
+POST /api/auth/register  
+POST /api/auth/login  
+POST /api/auth/forgot-password  
+POST /api/auth/refresh-token  
 
-### 🔒 Protected
+### Protected
 
-```http
-GET /api/test/secure
-```
+GET /api/test/user  
+GET /api/test/admin  
+GET /api/test/secure  
 
-Header:
-```
+Header:  
 Authorization: Bearer <JWT_TOKEN>
-```
 
 ---
 
-## 🧪 Sample API Response
+## 🧪 Sample API Responses
 
-### ✅ Success
+Success:
 
 ```json
 {
   "success": true,
   "message": "Login successful",
-  "data": "eyJhbGciOiJIUzI1NiJ9..."
+  "data": {
+    "accessToken": "jwt-token",
+    "refreshToken": "refresh-token"
+  }
 }
 ```
 
-### ❌ Error
+Error:
 
 ```json
 {
@@ -85,38 +89,68 @@ Authorization: Bearer <JWT_TOKEN>
 }
 ```
 
----
+Rate Limit:
 
-## ⚙️ Setup Instructions
-
-### 1️⃣ Clone the repository
-
-```bash
-git clone https://github.com/neeraj552/auth-service-springboot-jwt.git
-cd auth-service-springboot-jwt
+```json
+{
+  "success": false,
+  "message": "Too many requests. Try again later",
+  "data": null
+}
 ```
 
 ---
 
-### 2️⃣ Create Database
+## ⚙️ Setup Instructions
+
+Clone repository:
+
+```bash
+git clone https://github.com/neeraj552/authservice.git
+cd authservice
+```
+
+Create database:
 
 ```sql
 CREATE DATABASE auth_service;
 ```
 
----
-
-### 3️⃣ Configure application.properties
+application.properties:
 
 ```properties
+spring.application.name=authservice
+server.port=8080
+
 spring.datasource.url=jdbc:mysql://localhost:3306/auth_service
 spring.datasource.username=YOUR_USERNAME
 spring.datasource.password=YOUR_PASSWORD
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+
+jwt.secret=your-secret-key
+jwt.expiration.access=3600000
+jwt.expiration.refresh=2592000000
 ```
 
----
+Insert roles:
 
-### 4️⃣ Run the application
+```sql
+INSERT INTO roles(name) VALUES ('ROLE_USER');
+INSERT INTO roles(name) VALUES ('ROLE_ADMIN');
+```
+
+Run Redis:
+
+```bash
+redis-server
+```
+
+Run application:
 
 ```bash
 mvn spring-boot:run
@@ -124,42 +158,74 @@ mvn spring-boot:run
 
 ---
 
-### 5️⃣ Insert Roles (IMPORTANT)
+## 🧪 Testing
 
-```sql
-INSERT INTO roles(name) VALUES ('ROLE_USER');
-INSERT INTO roles(name) VALUES ('ROLE_ADMIN');
+```bash
+mvn test
 ```
 
----
-
-## 🛡️ Security
-
-- Passwords are stored using **BCrypt hashing**
-- Authentication is **stateless**
-- JWT token is required for accessing protected endpoints
-- Token is validated on every request using a **custom JWT filter**
+Includes:
+- Service tests (Mockito)
+- Security & filter tests (MockMvc)
+- Redis rate limit tests
+- Verified by Maven Surefire
 
 ---
 
-## 📈 Future Improvements
+## 🔄 CI with Jenkins
 
-- Refresh Token implementation
-- Role-based authorization using `@PreAuthorize`
-- Swagger / OpenAPI documentation
-- Dockerization
-- Unit & Integration tests
+- Jenkins pipeline configured
+- Maven build + test execution
+- Build fails on test failure
+- Enforces production-level quality
+
+---
+
+## 🛡️ Security Highlights
+
+- BCrypt password hashing
+- Stateless JWT authentication
+- Request-level JWT validation
+- Redis-backed brute-force protection
+- Audit logging
+
+---
+
+## 📁 Project Structure
+
+```
+src/main/java
+├── controller
+├── service
+├── security
+├── ratelimit
+├── repository
+├── entity
+└── util
+
+src/test/java
+├── service
+├── security
+└── ratelimit
+```
 
 ---
 
 ## 👨‍💻 Author
 
-**Neeraj Sharma**  
+Neeraj Sharma  
 Java Backend Developer  
-Focused on building production-grade backend systems
+Focused on production-grade backend systems, security, and scalability
 
 ---
 
-## ⭐ If you like this project
+## 📊 Project Status
 
-Give it a ⭐ and feel free to fork or contribute!
+COMPLETED  
+Stable, tested, CI-verified authentication service.
+
+---
+
+## ⭐ Support
+
+If you find this project useful, give it a star on GitHub.
